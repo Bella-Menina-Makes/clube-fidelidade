@@ -1,7 +1,7 @@
 // Configuração do Supabase
 
-const SUPABASE_URL = "COLE_AQUI_SUA_URL";
-const SUPABASE_ANON_KEY = "COLE_AQUI_SUA_CHAVE_ANON";
+const SUPABASE_URL = "https://vtymyjkganxuehdzcbgj.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "sb_publishable_6JRlAW3h8YQKFCjPQ3ZzTQ_XNSZyho9";
 
 const supabaseClient = supabase.createClient(
     SUPABASE_URL,
