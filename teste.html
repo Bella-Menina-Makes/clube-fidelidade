@@ -20,32 +20,15 @@
 <script src="js/config.js"></script>
 
 <script>
+console.log("Supabase:", window.supabase);
 
-document.getElementById("btnTeste").addEventListener("click", async () => {
-
-    const resultado = document.getElementById("resultado");
-
-    try {
-
-        const { error } = await supabaseClient
-            .from("clientes")
-            .select("id")
-            .limit(1);
-
-        if(error){
-            resultado.innerHTML = error.message;
-        }else{
-            resultado.innerHTML = "✅ Conexão com o Supabase realizada com sucesso!";
-        }
-
-    } catch (e){
-
-        resultado.innerHTML = e.message;
-
-    }
-
-});
-
+if (window.supabase) {
+    document.getElementById("resultado").innerHTML =
+        "✅ Biblioteca Supabase carregada!";
+} else {
+    document.getElementById("resultado").innerHTML =
+        "❌ Biblioteca Supabase NÃO carregou!";
+}
 </script>
 
 </body>
