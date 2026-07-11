@@ -1,1 +1,46 @@
-Página Inicial
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clube de Fidelidade</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Faça seu Cadastro e Participe!</h2>
+        <p>Preencha os dados abaixo para gerar seu código de cliente.</p>
+
+        <form id="form-cadastro">
+            <div class="form-group">
+                <label for="nome">Nome Completo:</label>
+                <input type="text" id="nome" required placeholder="Digite seu nome">
+            </div>
+
+            <div class="form-group">
+                <label for="telefone">Telefone (WhatsApp):</label>
+                <input type="tel" id="telefone" required placeholder="(00) 90000-0000">
+            </div>
+
+            <div class="form-group">
+                <label for="email">E-mail:</label>
+                <input type="email" id="email" required placeholder="seu@email.com">
+            </div>
+
+            <button type="submit">Gerar Meu Código</button>
+        </form>
+
+        <div id="resultado-cadastro" class="hidden">
+            <h3>🎉 Cadastro Realizado com Sucesso!</h3>
+            <p>Apresente o código abaixo na sua próxima compra:</p>
+            <div class="codigo-gerado" id="codigo-cliente">------</div>
+            <p><strong style="color: #e74c3c;">Importante:</strong> Tire um print desta tela para não perder seu código!</p>
+        </div>
+    </div>
+
+    <script src="js/supabase-config.js"></script>
+    <script src="js/cliente.js"></script>
+</body>
+</html>
