@@ -9,8 +9,8 @@ document.getElementById('form-cadastro').addEventListener('submit', async (e) =>
     const codigoGerado = "CLI" + Math.floor(100000 + Math.random() * 900000);
 
     try {
-        // Insere os dados na tabela 'clientes' do Supabase
-        const { data, error } = await supabase
+        // AJUSTADO: Usa o supabaseClient para evitar o conflito de nomes
+        const { data, error } = await supabaseClient
             .from('clientes')
             .insert([
                 { 
