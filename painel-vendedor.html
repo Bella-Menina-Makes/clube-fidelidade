@@ -9,40 +9,47 @@
 </head>
 <body>
 
-    <div class="container" style="max-width: 500px;">
+    <div class="container">
         <h2>Painel do Vendedor</h2>
-        <p>Consulte o código do cliente para lançar novas compras.</p>
+        <p>Gerencie os pontos e compras dos clientes abaixo.</p>
 
         <div id="secao-busca">
             <div class="form-group">
                 <label for="busca-codigo">Código do Cliente:</label>
-                <input type="text" id="busca-codigo" placeholder="Ex: CLI123456" required style="text-transform: uppercase;">
+                <input type="text" id="busca-codigo" placeholder="Ex: CLI123456">
             </div>
-            <button type="button" id="btn-buscar" style="background-color: #3498db;">Buscar Cliente</button>
+            <button type="button" id="btn-buscar">Buscar Cliente</button>
         </div>
 
-        <div id="dados-cliente" class="hidden" style="margin-top: 25px; text-align: left; border-top: 1px solid #eee; padding-top: 20px;">
-            <h3 id="cliente-nome" style="color: #2c3e50; margin-bottom: 5px;">Nome do Cliente</h3>
-            <p id="cliente-info" style="margin-bottom: 15px; font-size: 13px;">Telefone: - | E-mail: -</p>
-
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db;">
-                <span style="font-size: 13px; font-weight: bold; color: #7f8c8d;">Saldo Acumulado:</span>
-                <div id="cliente-saldo" style="font-size: 24px; font-weight: bold; color: #2c3e50; margin: 5px 0;">R$ 0,00</div>
-                <div id="cliente-status-premio" style="font-size: 13px; font-weight: bold; margin-bottom: 10px;"></div>
+        <div id="dados-cliente" class="hidden">
+            <div class="perfil-cliente">
+                <h3 id="cliente-nome">---</h3>
+                <p id="cliente-info">---</p>
                 
-                <button type="button" id="btn-resgatar" class="hidden" style="background-color: #9b59b6; margin-top: 5px; padding: 10px;">
-                    🎁 Confirmar Resgate do Prêmio
-                </button>
+                <div class="saldo-box">
+                    <span>Saldo Acumulado:</span>
+                    <strong id="cliente-saldo">R$ 0.00</strong>
+                </div>
+                
+                <p id="cliente-status-premio" style="font-weight: bold; margin-top: 10px;"></p>
             </div>
+
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
             <form id="form-lancar-compra">
                 <div class="form-group">
-                    <label for="valor-compra">Valor da Nova Compra (R$):</label>
-                    <input type="number" id="valor-compra" step="0.01" min="0.01" placeholder="0.00" required>
+                    <label for="cupom-compra">Número do Cupom / Venda:</label>
+                    <input type="text" id="cupom-compra" required placeholder="Digite o código do cupom do caixa">
                 </div>
-                <button type="submit">Confirmar e Lançar Compra</button>
+
+                <div class="form-group">
+                    <label for="valor-compra">Valor da Nova Compra (R$):</label>
+                    <input type="number" id="valor-compra" step="0.01" required placeholder="0.00">
+                </div>
+
+                <button type="submit" style="background-color: #2ecc71;">Confirmar e Lançar Compra</button>
+                <button type="button" id="btn-limpar" style="background-color: #95a5a6; margin-top: 10px;">Voltar / Nova Busca</button>
             </form>
-            
-            <button type="button" id="btn-limpar" style="background-color: #95a5a6; margin-top: 10px;">Voltar / Nova Busca</button>
         </div>
     </div>
 
