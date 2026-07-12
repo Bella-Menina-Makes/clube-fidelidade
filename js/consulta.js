@@ -17,7 +17,6 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
     if (!codigoInput) { alert('Por favor, informe o seu código de cliente.'); return; }
 
     try {
-        // 1. Busca o cliente atualizado direto do banco
         const { data: cliente, error: erroCliente } = await supabaseClient
             .from('clientes')
             .select('*')
@@ -26,7 +25,7 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
 
         if (erroCliente || !cliente) { alert('⚠️ Código de cliente não encontrado!'); return; }
 
-        // 2. Busca o histórico de compras
+        // Busca o histórico completo de compras (independente se foi resgatado ou não)
         const { data: compras, error: erroCompras } = await supabaseClient
             .from('compras')
             .select('*')
@@ -38,15 +37,22 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
         let saldoTotal = 0;
 
         if (compras && compras.length > 0 && !erroCompras) {
-            saldoTotal = compras.reduce((total, c) => total + parseFloat(c.valor), 0);
-
             compras.forEach(compra => {
+                // SOMA APENAS SE FOR PENDENTE: Reinicia o cálculo numérico se o ciclo anterior fechou
+                if (compra.status_premio === 'Pendente') {
+                    saldoTotal += parseFloat(compra.valor);
+                }
+
                 const dataFormatada = new Date(compra.created_at).toLocaleDateString('pt-BR');
                 const valorFormatado = parseFloat(compra.valor).toFixed(2);
+                
+                // Texto informativo opcional caso queira mostrar quais cupons já foram usados para resgates passados
+                const sulfixoStatus = compra.status_premio === 'Resgatado' ? ' <small style="color:#7f8c8d;">(Resgatado)</small>' : '';
+
                 const linha = `
                     <tr style="border-bottom: 1px solid #ddd;">
                         <td style="padding: 10px; border: 1px solid #ddd;">${dataFormatada}</td>
-                        <td style="padding: 10px; border: 1px solid #ddd;">${compra.cupom || '---'}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${compra.cupom || '---'}${sulfixoStatus}</td>
                         <td style="padding: 10px; border: 1px solid #ddd; color: #27ae60; font-weight: bold;">R$ ${valorFormatado}</td>
                     </tr>
                 `;
@@ -55,24 +61,21 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
         } else {
             tabelaCorpo.innerHTML = `
                 <tr>
-                    <td colspan="3" style="padding: 20px; text-align: center; color: #999;">Nenhuma compra registrada neste ciclo.</td>
+                    <td colspan="3" style="padding: 20px; text-align: center; color: #999;">Nenhuma compra registrada.</td>
                 </tr>
             `;
         }
 
-        // 3. EXIBIÇÃO SYNC: Altera o layout dependendo do status real do banco
         document.getElementById('nome-exibicao').innerText = `Olá, ${cliente.nome}!`;
         const containerSaldo = document.getElementById('saldo-exibicao').parentElement;
         const msgPremio = document.getElementById('status-premio-cliente');
 
         if (cliente.premiado === true) {
-            // Caso esteja premiado (Vendedor ainda NÃO clicou no botão roxo de entregar)
             containerSaldo.style.background = "#d4edda"; 
             document.getElementById('saldo-exibicao').innerHTML = `<span style="color: #155724; font-size: 18px;">🏆 META ATINGIDA!</span><br><small style="font-size: 13px; font-weight: normal; color: #155724;">Retire seu prêmio com o vendedor.</small>`;
             msgPremio.innerText = "🎉 PARABÉNS! Seu prêmio está disponível para retirada!";
             msgPremio.style.color = "#2ecc71";
         } else {
-            // Caso já tenha sido resetado ou ainda não atingiu a meta (Vendedor CLICOU no botão roxo)
             containerSaldo.style.background = "#e8f4fd"; 
             document.getElementById('saldo-exibicao').innerText = `R$ ${saldoTotal.toFixed(2)}`;
             
