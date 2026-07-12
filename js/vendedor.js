@@ -1,7 +1,6 @@
 let clienteAtual = null;
-let metaFidelidade = 100.00; // Valor padrão caso falhe a busca da configuração
+let metaFidelidade = 100.00;
 
-// Executa ao carregar a página para buscar a meta cadastrada na tabela 'configuracao'
 async function carregarMeta() {
     try {
         const { data, error } = await supabaseClient
@@ -9,155 +8,119 @@ async function carregarMeta() {
             .select('meta')
             .eq('id', 1)
             .single();
-        
-        if (data && !error) {
-            metaFidelidade = parseFloat(data.meta);
-        }
-    } catch (err) {
-        console.error("Erro ao carregar meta:", err);
-    }
+        if (data && !error) metaFidelidade = parseFloat(data.meta);
+    } catch (err) { console.error("Erro ao carregar meta:", err); }
 }
 carregarMeta();
 
-// Evento do Botão de Buscar Cliente
+// BUSCA CLIENTE
 document.getElementById('btn-buscar').addEventListener('click', async () => {
     const codigoInput = document.getElementById('busca-codigo').value.trim().toUpperCase();
-
-    if (!codigoInput) {
-        alert('Por favor, digite um código.');
-        return;
-    }
+    if (!codigoInput) { alert('Por favor, digite um código.'); return; }
 
     try {
-        // 1. Busca o cliente pelo código
         const { data: cliente, error: erroCliente } = await supabaseClient
             .from('clientes')
             .select('*')
             .eq('codigo', codigoInput)
             .single();
 
-        if (erroCliente || !cliente) {
-            alert('⚠️ Cliente não encontrado com esse código!');
-            return;
-        }
-
+        if (erroCliente || !cliente) { alert('⚠️ Cliente não encontrado!'); return; }
         clienteAtual = cliente;
 
-        // 2. Busca o histórico de compras desse cliente para somar o saldo
-        const { data: compras, error: erroCompras } = await supabaseClient
+        const { data: compras } = await supabaseClient
             .from('compras')
             .select('valor')
             .eq('cliente_id', cliente.id);
 
-        let saldoAcumulado = 0;
-        if (compras && !erroCompras) {
-            saldoAcumulado = compras.reduce((total, compra) => total + parseFloat(compra.valor), 0);
-        }
+        let saldoAcumulado = compras ? compras.reduce((t, c) => t + parseFloat(c.valor), 0) : 0;
 
-        // 3. Atualiza a tela com os dados encontrados
         document.getElementById('cliente-nome').innerText = cliente.nome;
         document.getElementById('cliente-info').innerText = `Tel: ${cliente.telefone} | Email: ${cliente.email}`;
         document.getElementById('cliente-saldo').innerText = `R$ ${saldoAcumulado.toFixed(2)}`;
 
         const statusPremioDiv = document.getElementById('cliente-status-premio');
+        const btnResgatar = document.getElementById('btn-resgatar-premio');
         
+        // Se o cliente já está marcado como premiado no banco
         if (cliente.premiado || saldoAcumulado >= metaFidelidade) {
             statusPremioDiv.innerText = "🎉 CLIENTE PREMIADO! Meta atingida.";
             statusPremioDiv.style.color = "#2ecc71";
+            if (btnResgatar) btnResgatar.classList.remove('hidden'); // Mostra o botão de resgate
         } else {
             const restante = metaFidelidade - saldoAcumulado;
-            statusPremioDiv.innerText = `Faltam R$ ${restante.toFixed(2)} para ganhar o prêmio (Meta: R$ ${metaFidelidade.toFixed(2)})`;
+            statusPremioDiv.innerText = `Faltam R$ ${restante.toFixed(2)} para o prêmio`;
             statusPremioDiv.style.color = "#e67e22";
+            if (btnResgatar) btnResgatar.classList.add('hidden');
         }
 
-        // Alterna a visualização dos blocos na tela
         document.getElementById('secao-busca').classList.add('hidden');
         document.getElementById('dados-cliente').classList.remove('hidden');
-
-    } catch (err) {
-        console.error(err);
-        alert('Erro ao processar a busca.');
-    }
+    } catch (err) { console.error(err); }
 });
 
-// Evento do Formulário de Lançar Nova Compra
+// AÇÃO DE LANÇAR COMPRA
 document.getElementById('form-lancar-compra').addEventListener('submit', async (e) => {
     e.preventDefault();
-
     if (!clienteAtual) return;
 
-    // Captura os valores digitados de valor e cupom
     const valorCompra = parseFloat(document.getElementById('valor-compra').value);
     const cupomCompra = document.getElementById('cupom-compra').value.trim();
 
-    if (!cupomCompra) {
-        alert('Por favor, informe o número do cupom.');
-        return;
-    }
-
-    if (isNaN(valorCompra) || valorCompra <= 0) {
-        alert('Insira um valor de compra válido.');
-        return;
-    }
-
     try {
-        // 1. Registra a nova compra enviando o número do cupom para a tabela
-        const { error: erroInserir } = await supabaseClient
-            .from('compras')
-            .insert([
-                {
-                    cliente_id: clienteAtual.id,
-                    valor: valorCompra,
-                    cupom: cupomCompra
-                }
-            ]);
+        await supabaseClient.from('compras').insert([{ cliente_id: clienteAtual.id, valor: valorCompra, cupom: cupomCompra }]);
 
-        if (erroInserir) {
-            alert('Erro ao registrar a compra: ' + erroInserir.message);
-            return;
-        }
+        const { data: compras } = await supabaseClient.from('compras').select('valor').eq('cliente_id', clienteAtual.id);
+        const novoSaldo = compras.reduce((t, c) => t + parseFloat(c.valor), 0);
 
-        // 2. Recalcula o saldo total
-        const { data: compras } = await supabaseClient
-            .from('compras')
-            .select('valor')
-            .eq('cliente_id', clienteAtual.id);
-        
-        const novoSaldo = compras.reduce((total, c) => total + parseFloat(c.valor), 0);
-
-        // 3. Atualiza o status do cliente caso atinja a meta
         if (novoSaldo >= metaFidelidade && !clienteAtual.premiado) {
-            await supabaseClient
-                .from('clientes')
-                .update({ 
-                    premiado: true, 
-                    data_premiacao: new Date().toISOString() 
-                })
-                .eq('id', clienteAtual.id);
-            
-            alert(`🎉 Compra lançada com sucesso!\n\nATENÇÃO VENDEDOR: O cliente acabou de atingir a meta de R$ ${metaFidelidade.toFixed(2)} e está PREMIADO!`);
+            await supabaseClient.from('clientes').update({ premiado: true, data_premiacao: new Date().toISOString() }).eq('id', clienteAtual.id);
+            alert("🎉 Compra lançada! O cliente atingiu a meta e está PREMIADO!");
         } else {
             alert('Compra registrada com sucesso!');
         }
-
         resetarPainel();
-
-    } catch (err) {
-        console.error(err);
-        alert('Erro ao salvar os dados da compra.');
-    }
+    } catch (err) { alert('Erro ao salvar compra.'); }
 });
 
-// Evento do Botão Voltar/Limpar
+// ADICIONAL: FUNÇÃO DO BOTÃO DE RESGATAR PRÊMIO (LIMPA SALDO E VOLTA STATUS)
+if (document.getElementById('btn-resgatar-premio')) {
+    document.getElementById('btn-resgatar-premio').addEventListener('click', async () => {
+        if (!clienteAtual) return;
+        
+        if (!confirm(`Deseja confirmar o resgate do prêmio para ${clienteAtual.nome}?\nIsso irá zerar o saldo atual dele para recomeçar.`)) return;
+
+        try {
+            // 1. Apaga as compras antigas para zerar o saldo no histórico
+            await supabaseClient
+                .from('compras')
+                .delete()
+                .eq('cliente_id', clienteAtual.id);
+
+            // 2. Volta o status do cliente para false (não premiado) para ele recomeçar a pontuar
+            await supabaseClient
+                .from('clientes')
+                .update({ premiado: false, data_premiacao: null })
+                .eq('id', clienteAtual.id);
+
+            alert('🎁 Prêmio entregue com sucesso! O saldo do cliente foi resetado e ele já pode acumular pontos novamente.');
+            resetarPainel();
+        } catch (err) {
+            console.error(err);
+            alert('Erro ao processar o resgate.');
+        }
+    });
+}
+
 document.getElementById('btn-limpar').addEventListener('click', resetarPainel);
 
 function resetarPainel() {
     clienteAtual = null;
     document.getElementById('busca-codigo').value = '';
     document.getElementById('valor-compra').value = '';
-    if (document.getElementById('cupom-compra')) {
-        document.getElementById('cupom-compra').value = '';
-    }
+    if (document.getElementById('cupom-compra')) document.getElementById('cupom-compra').value = '';
+    const btnResgatar = document.getElementById('btn-resgatar-premio');
+    if (btnResgatar) btnResgatar.classList.add('hidden');
     document.getElementById('secao-busca').classList.remove('hidden');
     document.getElementById('dados-cliente').classList.add('hidden');
 }
