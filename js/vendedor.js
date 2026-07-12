@@ -70,6 +70,7 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
             statusPremioDiv.style.color = "#e67e22";
         }
 
+        // Alterna a visualização dos blocos na tela
         document.getElementById('secao-busca').classList.add('hidden');
         document.getElementById('dados-cliente').classList.remove('hidden');
 
@@ -85,7 +86,7 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
 
     if (!clienteAtual) return;
 
-    // Captura os valores digitados no painel pelo vendedor
+    // Captura os valores digitados de valor e cupom
     const valorCompra = parseFloat(document.getElementById('valor-compra').value);
     const cupomCompra = document.getElementById('cupom-compra').value.trim();
 
@@ -100,7 +101,7 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
     }
 
     try {
-        // 1. Registra a nova compra na tabela 'compras' enviando o cupom digitado
+        // 1. Registra a nova compra enviando o número do cupom para a tabela
         const { error: erroInserir } = await supabaseClient
             .from('compras')
             .insert([
@@ -124,7 +125,7 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
         
         const novoSaldo = compras.reduce((total, c) => total + parseFloat(c.valor), 0);
 
-        // 3. Verifica se atingiu a meta para atualizar o status do cliente
+        // 3. Atualiza o status do cliente caso atinja a meta
         if (novoSaldo >= metaFidelidade && !clienteAtual.premiado) {
             await supabaseClient
                 .from('clientes')
