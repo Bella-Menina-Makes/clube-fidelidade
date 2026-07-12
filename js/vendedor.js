@@ -4,7 +4,6 @@ let metaFidelidade = 100.00; // Valor padrão caso falhe a busca da configuraç�
 // Executa ao carregar a página para buscar a meta cadastrada na tabela 'configuracao'
 async function carregarMeta() {
     try {
-        // AJUSTADO: Alterado para supabaseClient
         const { data, error } = await supabaseClient
             .from('configuracao')
             .select('meta')
@@ -31,7 +30,6 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
 
     try {
         // 1. Busca o cliente pelo código
-        // AJUSTADO: Alterado para supabaseClient
         const { data: cliente, error: erroCliente } = await supabaseClient
             .from('clientes')
             .select('*')
@@ -46,7 +44,6 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         clienteAtual = cliente;
 
         // 2. Busca o histórico de compras desse cliente para somar o saldo
-        // AJUSTADO: Alterado para supabaseClient
         const { data: compras, error: erroCompras } = await supabaseClient
             .from('compras')
             .select('valor')
@@ -54,7 +51,6 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
 
         let saldoAcumulado = 0;
         if (compras && !erroCompras) {
-            // Soma todos os valores lançados
             saldoAcumulado = compras.reduce((total, compra) => total + parseFloat(compra.valor), 0);
         }
 
@@ -65,7 +61,6 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
 
         const statusPremioDiv = document.getElementById('cliente-status-premio');
         
-        // Verifica se já atingiu a meta ou se já foi premiado
         if (cliente.premiado || saldoAcumulado >= metaFidelidade) {
             statusPremioDiv.innerText = "🎉 CLIENTE PREMIADO! Meta atingida.";
             statusPremioDiv.style.color = "#2ecc71";
@@ -75,7 +70,6 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
             statusPremioDiv.style.color = "#e67e22";
         }
 
-        // Alterna a visualização dos blocos na tela
         document.getElementById('secao-busca').classList.add('hidden');
         document.getElementById('dados-cliente').classList.remove('hidden');
 
@@ -91,7 +85,14 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
 
     if (!clienteAtual) return;
 
+    // Captura os valores digitados no painel pelo vendedor
     const valorCompra = parseFloat(document.getElementById('valor-compra').value);
+    const cupomCompra = document.getElementById('cupom-compra').value.trim();
+
+    if (!cupomCompra) {
+        alert('Por favor, informe o número do cupom.');
+        return;
+    }
 
     if (isNaN(valorCompra) || valorCompra <= 0) {
         alert('Insira um valor de compra válido.');
@@ -99,14 +100,14 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
     }
 
     try {
-        // 1. Registra a nova compra na tabela 'compras'
-        // AJUSTADO: Alterado para supabaseClient
+        // 1. Registra a nova compra na tabela 'compras' enviando o cupom digitado
         const { error: erroInserir } = await supabaseClient
             .from('compras')
             .insert([
                 {
                     cliente_id: clienteAtual.id,
-                    valor: valorCompra
+                    valor: valorCompra,
+                    cupom: cupomCompra
                 }
             ]);
 
@@ -115,8 +116,7 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
             return;
         }
 
-        // 2. Recalcula o saldo total somando com a compra atual para ver se bateu a meta
-        // AJUSTADO: Alterado para supabaseClient
+        // 2. Recalcula o saldo total
         const { data: compras } = await supabaseClient
             .from('compras')
             .select('valor')
@@ -124,9 +124,8 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
         
         const novoSaldo = compras.reduce((total, c) => total + parseFloat(c.valor), 0);
 
-        // 3. Se atingiu a meta e o cliente ainda não estava marcado como premiado, atualiza o status dele
+        // 3. Verifica se atingiu a meta para atualizar o status do cliente
         if (novoSaldo >= metaFidelidade && !clienteAtual.premiado) {
-            // AJUSTADO: Alterado para supabaseClient
             await supabaseClient
                 .from('clientes')
                 .update({ 
@@ -140,7 +139,6 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
             alert('Compra registrada com sucesso!');
         }
 
-        // Reseta a tela para uma nova operação
         resetarPainel();
 
     } catch (err) {
@@ -156,6 +154,9 @@ function resetarPainel() {
     clienteAtual = null;
     document.getElementById('busca-codigo').value = '';
     document.getElementById('valor-compra').value = '';
+    if (document.getElementById('cupom-compra')) {
+        document.getElementById('cupom-compra').value = '';
+    }
     document.getElementById('secao-busca').classList.remove('hidden');
     document.getElementById('dados-cliente').classList.add('hidden');
 }
