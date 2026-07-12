@@ -7,7 +7,7 @@
 }
 
 body {
-    /* MELHORIA: Película trocada para o tom rosa da marca com 90% de transparência por cima da logo */
+    /* Mantém a logo como marca d'água com a película rosa pastel que deu super certo */
     background-image: linear-gradient(rgba(253, 230, 239, 0.9), rgba(253, 230, 239, 0.9)), url('../img/logo-principal.jpeg');
     background-size: cover;
     background-position: center;
@@ -29,12 +29,12 @@ body {
     max-width: 450px;
     padding: 30px;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(224, 140, 171, 0.15); /* Sombra levemente rosada */
+    box-shadow: 0 4px 20px rgba(224, 140, 171, 0.15); /* Sombra sutilmente rosada */
     text-align: center;
 }
 
 h2 {
-    color: #4a2834; /* Tom vinho/escuro harmônico com o rosa */
+    color: #4a2834; /* Tom vinho escuro extraído da logo */
     font-size: 22px;
     margin-bottom: 8px;
 }
@@ -71,17 +71,17 @@ input {
 }
 
 input:focus {
-    border-color: #d87093; /* Rosa médio no foco */
+    border-color: #d87093;
     background-color: #ffffff;
     outline: none;
     box-shadow: 0 0 0 3px rgba(216, 112, 147, 0.15);
 }
 
-/* Botão de Envio - TOTALMENTE AJUSTADO PARA A PALETA ROSA */
-button {
+/* BOTÃO PRINCIPAL (Lançar Compra / Consultar / Cadastrar) */
+button, .btn-primary {
     width: 100%;
     padding: 14px;
-    background-color: #d85c89; /* Rosa marcante da logo */
+    background-color: #d85c89; /* Rosa marcante e vivo da logo */
     color: white;
     border: none;
     border-radius: 6px;
@@ -92,32 +92,46 @@ button {
     margin-top: 10px;
 }
 
-button:hover {
-    background-color: #be436f; /* Rosa ligeiramente mais escuro ao passar o mouse */
+button:hover, .btn-primary:hover {
+    background-color: #be436f; /* Rosa fechado ao passar o mouse */
 }
 
-button:active {
+button:active, .btn-primary:active {
     transform: scale(0.98);
 }
 
-/* Área de Sucesso (Resultado do Cadastro) */
-#resultado-cadastro {
+/* BOTÃO SECUNDÁRIO (Voltar / Nova Busca / Limpar) */
+/* Dica: Adicione class="btn-secondary" no seu botão cinza de "Voltar / Nova Busca" no HTML */
+button.secondary, .btn-secondary, #btn-limpar, #btn-nova-consulta {
+    background-color: #f5d6df !important; /* Rosa pastel suave */
+    color: #be436f !important; /* Texto em rosa escuro para dar contraste */
+    border: 1px solid #ffb6c1 !important;
+    margin-top: 12px;
+}
+
+button.secondary:hover, .btn-secondary:hover, #btn-limpar:hover, #btn-nova-consulta:hover {
+    background-color: #ebd0d9 !important;
+    color: #4a2834 !important;
+}
+
+/* BOTÃO DE CONFIRMAR ENTREGA (Destaque Especial) */
+/* Se você tiver um ID ou classe específica para o botão roxo de entregar prêmio */
+#btn-resgatar-premio {
+    background-color: #4a2834 !important; /* Vinho elegante/Ouro Rosé escuro */
+    color: #ffffff !important;
+}
+
+#btn-resgatar-premio:hover {
+    background-color: #31151f !important;
+}
+
+/* Área de Mensagens e Resultados */
+#resultado-cadastro, .status-container {
     margin-top: 10px;
     padding: 20px;
     border-radius: 8px;
-    background-color: #fff0f5; /* Fundo rosa bem clarinho */
+    background-color: #fff0f5;
     border: 1px solid #ffd1dc;
-}
-
-#resultado-cadastro h3 {
-    color: #b03060;
-    font-size: 18px;
-    margin-bottom: 10px;
-}
-
-#resultado-cadastro p {
-    color: #644550;
-    margin-bottom: 15px;
 }
 
 /* Código Gerado em Destaque */
