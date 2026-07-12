@@ -1,1 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Saldo - Clube de Fidelidade</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
 
+    <div class="container">
+        <h2>Acompanhe Seus Pontos</h2>
+        <p>Digite seu código de cliente para consultar seu saldo e histórico de compras.</p>
+
+        <div id="secao-busca-cliente">
+            <div class="form-group">
+                <label for="codigo-cliente">Seu Código de Cliente:</label>
+                <input type="text" id="codigo-cliente" placeholder="Ex: CLI348640" required>
+            </div>
+            <button type="button" id="btn-consultar">Consultar Extrato</button>
+        </div>
+
+        <div id="painel-resultado" class="hidden" style="margin-top: 20px;">
+            <div class="perfil-cliente" style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <h3 id="nome-exibicao">---</h3>
+                
+                <div class="saldo-box" style="margin: 15px 0; padding: 10px; background: #e8f4fd; border-radius: 5px; text-align: center;">
+                    <span style="font-size: 14px; color: #555; display: block;">Seu Saldo Atual:</span>
+                    <strong id="saldo-exibicao" style="font-size: 24px; color: #2c3e50;">R$ 0.00</strong>
+                </div>
+                
+                <p id="status-premio-cliente" style="font-weight: bold; text-align: center;"></p>
+            </div>
+
+            <h4 style="margin-top: 25px; margin-bottom: 10px; color: #2c3e50;">Histórico de Compras</h4>
+            
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background-color: #34495e; color: white; text-align: left;">
+                            <th style="padding: 10px; border: 1px solid #ddd;">Data</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Cupom / Venda</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-compras">
+                        </tbody>
+                </table>
+            </div>
+
+            <button type="button" id="btn-nova-consulta" style="background-color: #7f8c8d; margin-top: 20px;">Nova Consulta</button>
+        </div>
+    </div>
+
+    <script src="js/supabase-config.js"></script>
+    <script src="js/consulta.js"></script>
+</body>
+</html>
