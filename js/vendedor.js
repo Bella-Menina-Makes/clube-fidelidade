@@ -28,12 +28,14 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         if (erroCliente || !cliente) { alert('⚠️ Cliente não encontrado!'); return; }
         clienteAtual = cliente;
 
-        // FILTRO AJUSTADO: Busca apenas as compras que ainda não fizeram parte de um resgate
-        const { data: compras } = await supabaseClient
+        // CORREÇÃO: Captura e trata possíveis erros na busca de compras
+        const { data: compras, error: erroCompras } = await supabaseClient
             .from('compras')
             .select('valor')
             .eq('cliente_id', cliente.id)
             .eq('status_premio', 'Pendente');
+
+        if (erroCompras) throw erroCompras;
 
         let saldoAcumulado = compras ? compras.reduce((t, c) => t + parseFloat(c.valor), 0) : 0;
 
@@ -58,7 +60,10 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
 
         document.getElementById('secao-busca').classList.add('hidden');
         document.getElementById('dados-cliente').classList.remove('hidden');
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+        console.error(err);
+        alert('Erro ao buscar informações do cliente: ' + err.message);
+    }
 });
 
 // AÇÃO DE LANÇAR COMPRA
@@ -70,33 +75,47 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
     const cupomCompra = document.getElementById('cupom-compra').value.trim();
 
     try {
-        // Insere a nova compra explicitando que ela inicia como 'Pendente'
-        await supabaseClient.from('compras').insert([{ 
+        // CORREÇÃO CRÍTICA: Força o disparo do erro caso o insert falhe (ex: violação de constraint do cupom)
+        const { error: erroInsert } = await supabaseClient.from('compras').insert([{ 
             cliente_id: clienteAtual.id, 
             valor: valorCompra, 
             cupom: cupomCompra,
             status_premio: 'Pendente'
         }]);
 
-        const { data: compras } = await supabaseClient
+        if (erroInsert) throw erroInsert;
+
+        // CORREÇÃO: Força o disparo do erro caso a consulta de recalculo falhe
+        const { data: compras, error: erroCalculo } = await supabaseClient
             .from('compras')
             .select('valor')
             .eq('cliente_id', clienteAtual.id)
             .eq('status_premio', 'Pendente');
 
+        if (erroCalculo) throw erroCalculo;
+
         const novoSaldo = compras.reduce((t, c) => t + parseFloat(c.valor), 0);
 
         if (novoSaldo >= metaFidelidade && !clienteAtual.premiado) {
-            await supabaseClient.from('clientes').update({ premiado: true, data_premiacao: new Date().toISOString() }).eq('id', clienteAtual.id);
+            const { error: erroUpdate } = await supabaseClient
+                .from('clientes')
+                .update({ premiado: true, data_premiacao: new Date().toISOString() })
+                .eq('id', clienteAtual.id);
+                
+            if (erroUpdate) throw erroUpdate;
+            
             alert("🎉 Compra lançada! O cliente atingiu a meta e está PREMIADO!");
         } else {
             alert('Compra registrada com sucesso!');
         }
         resetarPainel();
-    } catch (err) { alert('Erro ao salvar compra.'); }
+    } catch (err) { 
+        console.error(err);
+        alert('Erro ao salvar a compra no servidor: ' + err.message); 
+    }
 });
 
-// BOTÃO DE RESGATAR PRÊMIO (MUDANÇA DE STATUS EM VEZ DE DELETAR)
+// BOTÃO DE RESGATAR PRÊMIO
 if (document.getElementById('btn-resgatar-premio')) {
     document.getElementById('btn-resgatar-premio').addEventListener('click', async () => {
         if (!clienteAtual) return;
@@ -104,7 +123,7 @@ if (document.getElementById('btn-resgatar-premio')) {
         if (!confirm(`Deseja confirmar o resgate do prêmio para ${clienteAtual.nome}?\nIsso irá atualizar o saldo para recomeçar o ciclo.`)) return;
 
         try {
-            // 1. Em vez de deletar, atualiza as compras atuais para 'Resgatado'
+            // 1. Atualiza as compras atuais para 'Resgatado'
             const { error: erroUpdateCompras } = await supabaseClient
                 .from('compras')
                 .update({ status_premio: 'Resgatado' })
