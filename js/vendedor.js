@@ -28,7 +28,6 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         if (erroCliente || !cliente) { alert('⚠️ Cliente não encontrado!'); return; }
         clienteAtual = cliente;
 
-        // Filtra apenas as compras pendentes do ciclo atual
         const { data: compras, error: erroCompras } = await supabaseClient
             .from('compras')
             .select('valor')
@@ -46,7 +45,6 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         const statusPremioDiv = document.getElementById('cliente-status-premio');
         const btnResgatar = document.getElementById('btn-resgatar-premio');
         
-        // Sincroniza o painel com base no status real do banco de dados
         if (cliente.premiado === true || saldoAcumulado >= metaFidelidade) {
             statusPremioDiv.innerText = "🎉 CLIENTE PREMIADO! Meta atingida.";
             statusPremioDiv.style.color = "#2ecc71";
@@ -66,7 +64,7 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
     }
 });
 
-// AÇÃO DE LANÇAR COMPRA
+// AÇÃO DE LANÇAR COMPRA (CORREÇÃO DA DATA)
 document.getElementById('form-lancar-compra').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!clienteAtual) return;
@@ -74,12 +72,17 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
     const valorCompra = parseFloat(document.getElementById('valor-compra').value);
     const cupomCompra = document.getElementById('cupom-compra').value.trim();
 
+    // AJUSTE CRÍTICO: Gera o timestamp considerando o fuso horário local correto
+    const agoraLocal = new Date();
+    const fusoHorarioOficial = new Date(agoraLocal.getTime() - (agoraLocal.getTimezoneOffset() * 60000)).toISOString();
+
     try {
         const { error: erroInsert } = await supabaseClient.from('compras').insert([{ 
             cliente_id: clienteAtual.id, 
             valor: valorCompra, 
             cupom: cupomCompra,
-            status_premio: 'Pendente'
+            status_premio: 'Pendente',
+            data_compra: fusoHorarioOficial // Salva com o horário local ajustado
         }]);
 
         if (erroInsert) throw erroInsert;
@@ -97,7 +100,7 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
         if (novoSaldo >= metaFidelidade && !clienteAtual.premiado) {
             const { error: erroUpdate } = await supabaseClient
                 .from('clientes')
-                .update({ premiado: true, data_premiacao: new Date().toISOString() })
+                .update({ premiado: true, data_premiacao: fusoHorarioOficial })
                 .eq('id', clienteAtual.id);
                 
             if (erroUpdate) throw erroUpdate;
@@ -113,17 +116,15 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
     }
 });
 
-// BOTÃO DE RESGATAR PRÊMIO (MUDANÇA CRÍTICA DE REFERÊNCIA)
+// BOTÃO DE RESGATAR PRÊMIO
 if (document.getElementById('btn-resgatar-premio')) {
     document.getElementById('btn-resgatar-premio').addEventListener('click', async () => {
-        // CORREÇÃO PREVENTIVA: Garante que temos o código digitado no campo de busca original
         const codigoInput = document.getElementById('busca-codigo').value.trim().toUpperCase();
-        if (!clienteAtual || !codigoInput) { alert('Erro: Código do cliente inválido ou ausente.'); return; }
+        if (!clienteAtual || !codigoInput) { alert('Erro: Cliente não identificado ou código ausente.'); return; }
         
-        if (!confirm(`Deseja confirmar o resgate do prêmio para ${clienteAtual.nome}?\nIsso irá zerar o status de premiado e reiniciar o saldo de acúmulo.`)) return;
+        if (!confirm(`Deseja confirmar o resgate do prêmio para ${clienteAtual.nome}?\nIsso irá zerar o saldo mudando o status das compras atuais para Resgatado.`)) return;
 
         try {
-            // 1. Atualiza o status das compras pendentes deste cliente para 'Resgatado'
             const { error: erroUpdateCompras } = await supabaseClient
                 .from('compras')
                 .update({ status_premio: 'Resgatado' })
@@ -132,19 +133,17 @@ if (document.getElementById('btn-resgatar-premio')) {
 
             if (erroUpdateCompras) throw erroUpdateCompras;
 
-            // 2. CORREÇÃO DE IMPACTO: Atualiza o cliente usando explicitamente o "codigo" único da busca
-            // Isso evita falhas caso o 'id' em formato UUID sofra dessincronização local na memória do JS
             const { error: erroUpdateCliente } = await supabaseClient
                 .from('clientes')
                 .update({ premiado: false, data_premiacao: null })
-                .eq('codigo', codigoInput);
+                .eq('id', clienteAtual.id);
 
             if (erroUpdateCliente) throw erroUpdateCliente;
 
-            alert('🎁 Prêmio entregue com sucesso! O sistema foi completamente atualizado e o cliente já pode consultar seu saldo zerado.');
+            alert('🎁 Prêmio entregue com sucesso! O banco de dados foi atualizado e o saldo reiniciado para este cliente.');
             resetarPainel();
         } catch (err) {
-            console.error(err);
+            console.error("Erro completo no processo de resgate:", err);
             alert('Erro ao processar o resgate: ' + err.message);
         }
     });
