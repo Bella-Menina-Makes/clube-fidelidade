@@ -144,3 +144,7 @@ button.secondary:hover, .btn-secondary:hover, #btn-limpar:hover, #btn-nova-consu
     border-radius: 6px;
     letter-spacing: 1px;
 }
+/* REGRA CRÍTICA: Esconde elementos que só devem aparecer depois de uma ação */
+.hidden {
+    display: none !important;
+}
