@@ -28,7 +28,7 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         if (erroCliente || !cliente) { alert('⚠️ Cliente não encontrado!'); return; }
         clienteAtual = cliente;
 
-        // CORREÇÃO: Captura e trata possíveis erros na busca de compras
+        // Filtra apenas as compras pendentes do ciclo atual
         const { data: compras, error: erroCompras } = await supabaseClient
             .from('compras')
             .select('valor')
@@ -46,7 +46,7 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         const statusPremioDiv = document.getElementById('cliente-status-premio');
         const btnResgatar = document.getElementById('btn-resgatar-premio');
         
-        // Sincroniza o painel do vendedor com o status real do banco e saldo pendente
+        // Sincroniza o painel com base no status real do banco de dados
         if (cliente.premiado === true || saldoAcumulado >= metaFidelidade) {
             statusPremioDiv.innerText = "🎉 CLIENTE PREMIADO! Meta atingida.";
             statusPremioDiv.style.color = "#2ecc71";
@@ -75,7 +75,6 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
     const cupomCompra = document.getElementById('cupom-compra').value.trim();
 
     try {
-        // CORREÇÃO CRÍTICA: Força o disparo do erro caso o insert falhe (ex: violação de constraint do cupom)
         const { error: erroInsert } = await supabaseClient.from('compras').insert([{ 
             cliente_id: clienteAtual.id, 
             valor: valorCompra, 
@@ -85,7 +84,6 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
 
         if (erroInsert) throw erroInsert;
 
-        // CORREÇÃO: Força o disparo do erro caso a consulta de recalculo falhe
         const { data: compras, error: erroCalculo } = await supabaseClient
             .from('compras')
             .select('valor')
@@ -111,19 +109,21 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
         resetarPainel();
     } catch (err) { 
         console.error(err);
-        alert('Erro ao salvar a compra no servidor: ' + err.message); 
+        alert('Erro ao salvar a compra: ' + err.message); 
     }
 });
 
-// BOTÃO DE RESGATAR PRÊMIO
+// BOTÃO DE RESGATAR PRÊMIO (MUDANÇA CRÍTICA DE REFERÊNCIA)
 if (document.getElementById('btn-resgatar-premio')) {
     document.getElementById('btn-resgatar-premio').addEventListener('click', async () => {
-        if (!clienteAtual) return;
+        // CORREÇÃO PREVENTIVA: Garante que temos o código digitado no campo de busca original
+        const codigoInput = document.getElementById('busca-codigo').value.trim().toUpperCase();
+        if (!clienteAtual || !codigoInput) { alert('Erro: Código do cliente inválido ou ausente.'); return; }
         
-        if (!confirm(`Deseja confirmar o resgate do prêmio para ${clienteAtual.nome}?\nIsso irá atualizar o saldo para recomeçar o ciclo.`)) return;
+        if (!confirm(`Deseja confirmar o resgate do prêmio para ${clienteAtual.nome}?\nIsso irá zerar o status de premiado e reiniciar o saldo de acúmulo.`)) return;
 
         try {
-            // 1. Atualiza as compras atuais para 'Resgatado'
+            // 1. Atualiza o status das compras pendentes deste cliente para 'Resgatado'
             const { error: erroUpdateCompras } = await supabaseClient
                 .from('compras')
                 .update({ status_premio: 'Resgatado' })
@@ -132,15 +132,16 @@ if (document.getElementById('btn-resgatar-premio')) {
 
             if (erroUpdateCompras) throw erroUpdateCompras;
 
-            // 2. Retorna o cliente ao estado inicial não-premiado
+            // 2. CORREÇÃO DE IMPACTO: Atualiza o cliente usando explicitamente o "codigo" único da busca
+            // Isso evita falhas caso o 'id' em formato UUID sofra dessincronização local na memória do JS
             const { error: erroUpdateCliente } = await supabaseClient
                 .from('clientes')
                 .update({ premiado: false, data_premiacao: null })
-                .eq('id', clienteAtual.id);
+                .eq('codigo', codigoInput);
 
             if (erroUpdateCliente) throw erroUpdateCliente;
 
-            alert('🎁 Prêmio entregue com sucesso! O saldo foi reiniciado para novos acúmulos.');
+            alert('🎁 Prêmio entregue com sucesso! O sistema foi completamente atualizado e o cliente já pode consultar seu saldo zerado.');
             resetarPainel();
         } catch (err) {
             console.error(err);
