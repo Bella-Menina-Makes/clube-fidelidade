@@ -7,7 +7,7 @@
 }
 
 body {
-    /* Mantém a logo como marca d'água com a película rosa pastel que deu super certo */
+    /* Mantém a logo como marca d'água com a película rosa pastel */
     background-image: linear-gradient(rgba(253, 230, 239, 0.9), rgba(253, 230, 239, 0.9)), url('../img/logo-principal.jpeg');
     background-size: cover;
     background-position: center;
@@ -29,7 +29,7 @@ body {
     max-width: 450px;
     padding: 30px;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(224, 140, 171, 0.15); /* Sombra sutilmente rosada */
+    box-shadow: 0 4px 20px rgba(224, 140, 171, 0.15);
     text-align: center;
 }
 
@@ -77,11 +77,11 @@ input:focus {
     box-shadow: 0 0 0 3px rgba(216, 112, 147, 0.15);
 }
 
-/* BOTÃO PRINCIPAL (Lançar Compra / Consultar / Cadastrar) */
+/* BOTÃO PRINCIPAL - COR RIGOROSAMENTE AJUSTADA PARA O ROSA DA LOGO */
 button, .btn-primary {
     width: 100%;
     padding: 14px;
-    background-color: #d85c89; /* Rosa marcante e vivo da logo */
+    background-color: #d67a9d !important; /* Tom exato extraído do círculo da logo */
     color: white;
     border: none;
     border-radius: 6px;
@@ -93,7 +93,7 @@ button, .btn-primary {
 }
 
 button:hover, .btn-primary:hover {
-    background-color: #be436f; /* Rosa fechado ao passar o mouse */
+    background-color: #be5e81 !important; /* Rosa um pouco mais intenso ao passar o mouse */
 }
 
 button:active, .btn-primary:active {
@@ -101,7 +101,6 @@ button:active, .btn-primary:active {
 }
 
 /* BOTÃO SECUNDÁRIO (Voltar / Nova Busca / Limpar) */
-/* Dica: Adicione class="btn-secondary" no seu botão cinza de "Voltar / Nova Busca" no HTML */
 button.secondary, .btn-secondary, #btn-limpar, #btn-nova-consulta {
     background-color: #f5d6df !important; /* Rosa pastel suave */
     color: #be436f !important; /* Texto em rosa escuro para dar contraste */
@@ -114,10 +113,9 @@ button.secondary:hover, .btn-secondary:hover, #btn-limpar:hover, #btn-nova-consu
     color: #4a2834 !important;
 }
 
-/* BOTÃO DE CONFIRMAR ENTREGA (Destaque Especial) */
-/* Se você tiver um ID ou classe específica para o botão roxo de entregar prêmio */
+/* BOTÃO DE CONFIRMAR ENTREGA (Vinho Elegante) */
 #btn-resgatar-premio {
-    background-color: #4a2834 !important; /* Vinho elegante/Ouro Rosé escuro */
+    background-color: #4a2834 !important;
     color: #ffffff !important;
 }
 
