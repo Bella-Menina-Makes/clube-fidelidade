@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clube de Fidelidade</title>
+    <title>Clube de Fidelidade - Bella Menina Makes</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -32,11 +32,18 @@
             <button type="submit">Gerar Meu Código</button>
         </form>
 
+        <div class="link-consulta-container" style="margin-top: 25px; padding-top: 20px; border-top: 1px dashed #e9d5db;">
+            <p style="margin-bottom: 10px; color: #8c737c; font-size: 14px;">Já possui cadastro no nosso Clube?</p>
+            <a href="consulta.html" class="btn-secondary" style="display: inline-block; width: 100%; text-decoration: none; text-align: center; padding: 14px; border-radius: 6px; font-weight: bold; box-sizing: border-box;">
+                Consultar Meu Saldo
+            </a>
+        </div>
+
         <div id="resultado-cadastro" class="hidden">
             <h3>🎉 Cadastro Realizado com Sucesso!</h3>
             <p>Apresente o código abaixo na sua próxima compra:</p>
             <div class="codigo-gerado" id="codigo-cliente">------</div>
-            <p><strong style="color: #e74c3c;">Importante:</strong> Tire um print desta tela para não perder seu código!</p>
+            <p><strong style="color: #be436f;">Importante:</strong> Tire um print desta tela para não perder seu código!</p>
         </div>
     </div>
 
