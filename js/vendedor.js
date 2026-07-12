@@ -4,7 +4,8 @@ let metaFidelidade = 100.00; // Valor padrão caso falhe a busca da configuraç�
 // Executa ao carregar a página para buscar a meta cadastrada na tabela 'configuracao'
 async function carregarMeta() {
     try {
-        const { data, error } = await supabase
+        // AJUSTADO: Alterado para supabaseClient
+        const { data, error } = await supabaseClient
             .from('configuracao')
             .select('meta')
             .eq('id', 1)
@@ -30,7 +31,8 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
 
     try {
         // 1. Busca o cliente pelo código
-        const { data: cliente, error: erroCliente } = await supabase
+        // AJUSTADO: Alterado para supabaseClient
+        const { data: cliente, error: erroCliente } = await supabaseClient
             .from('clientes')
             .select('*')
             .eq('codigo', codigoInput)
@@ -44,7 +46,8 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         clienteAtual = cliente;
 
         // 2. Busca o histórico de compras desse cliente para somar o saldo
-        const { data: compras, error: erroCompras } = await supabase
+        // AJUSTADO: Alterado para supabaseClient
+        const { data: compras, error: erroCompras } = await supabaseClient
             .from('compras')
             .select('valor')
             .eq('cliente_id', cliente.id);
@@ -97,7 +100,8 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
 
     try {
         // 1. Registra a nova compra na tabela 'compras'
-        const { error: erroInserir } = await supabase
+        // AJUSTADO: Alterado para supabaseClient
+        const { error: erroInserir } = await supabaseClient
             .from('compras')
             .insert([
                 {
@@ -112,7 +116,8 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
         }
 
         // 2. Recalcula o saldo total somando com a compra atual para ver se bateu a meta
-        const { data: compras } = await supabase
+        // AJUSTADO: Alterado para supabaseClient
+        const { data: compras } = await supabaseClient
             .from('compras')
             .select('valor')
             .eq('cliente_id', clienteAtual.id);
@@ -121,7 +126,8 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
 
         // 3. Se atingiu a meta e o cliente ainda não estava marcado como premiado, atualiza o status dele
         if (novoSaldo >= metaFidelidade && !clienteAtual.premiado) {
-            await supabase
+            // AJUSTADO: Alterado para supabaseClient
+            await supabaseClient
                 .from('clientes')
                 .update({ 
                     premiado: true, 
