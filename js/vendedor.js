@@ -42,11 +42,11 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         const statusPremioDiv = document.getElementById('cliente-status-premio');
         const btnResgatar = document.getElementById('btn-resgatar-premio');
         
-        // Se o cliente já está marcado como premiado no banco
-        if (cliente.premiado || saldoAcumulado >= metaFidelidade) {
+        // CORREÇÃO: O vendedor só vê o prêmio se o cliente realmente estiver marcado como premiado no banco de dados
+        if (cliente.premiado === true || saldoAcumulado >= metaFidelidade) {
             statusPremioDiv.innerText = "🎉 CLIENTE PREMIADO! Meta atingida.";
             statusPremioDiv.style.color = "#2ecc71";
-            if (btnResgatar) btnResgatar.classList.remove('hidden'); // Mostra o botão de resgate
+            if (btnResgatar) btnResgatar.classList.remove('hidden'); 
         } else {
             const restante = metaFidelidade - saldoAcumulado;
             statusPremioDiv.innerText = `Faltam R$ ${restante.toFixed(2)} para o prêmio`;
@@ -83,27 +83,29 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
     } catch (err) { alert('Erro ao salvar compra.'); }
 });
 
-// ADICIONAL: FUNÇÃO DO BOTÃO DE RESGATAR PRÊMIO (LIMPA SALDO E VOLTA STATUS)
+// BOTÃO DE RESGATAR PRÊMIO
 if (document.getElementById('btn-resgatar-premio')) {
     document.getElementById('btn-resgatar-premio').addEventListener('click', async () => {
         if (!clienteAtual) return;
         
-        if (!confirm(`Deseja confirmar o resgate do prêmio para ${clienteAtual.nome}?\nIsso irá zerar o saldo atual dele para recomeçar.`)) return;
+        if (!confirm(`Deseja confirmar o resgate do prêmio para ${clienteAtual.nome}?\nIsso irá zerar o saldo e o status de premiado tanto para você quanto para o cliente.`)) return;
 
         try {
-            // 1. Apaga as compras antigas para zerar o saldo no histórico
+            // 1. Apaga o histórico de compras para zerar o saldo real
             await supabaseClient
                 .from('compras')
                 .delete()
                 .eq('cliente_id', clienteAtual.id);
 
-            // 2. Volta o status do cliente para false (não premiado) para ele recomeçar a pontuar
+            // 2. CORREÇÃO: Altera explicitamente o status 'premiado' para FALSE na tabela de clientes
             await supabaseClient
                 .from('clientes')
                 .update({ premiado: false, data_premiacao: null })
                 .eq('id', clienteAtual.id);
 
-            alert('🎁 Prêmio entregue com sucesso! O saldo do cliente foi resetado e ele já pode acumular pontos novamente.');
+            alert('🎁 Prêmio entregue com sucesso! O sistema foi completamente resetado para este cliente começar de novo.');
+            
+            // 3. Força a limpeza visual completa do painel do vendedor
             resetarPainel();
         } catch (err) {
             console.error(err);
