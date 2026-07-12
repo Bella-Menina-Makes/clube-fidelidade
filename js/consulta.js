@@ -27,12 +27,13 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
 
         if (erroCliente || !cliente) { alert('⚠️ Código de cliente não encontrado!'); return; }
 
-        // 2. BUSCA TODAS AS COMPRAS - CORREÇÃO: Ordenado pela coluna real 'data_compra'
+        // 2. BUSCA AS COMPRAS - AJUSTADO: Filtra apenas cupons ativos que ainda NÃO foram resgatados
         const { data: compras, error: erroCompras } = await supabaseClient
             .from('compras')
             .select('*')
             .eq('cliente_id', cliente.id)
-            .order('data_compra', { ascending: false }); // Traz as mais recentes primeiro
+            .eq('status_premio', 'Pendente') // Remove os cupons já usados da listagem
+            .order('data_compra', { ascending: false });
 
         if (erroCompras) throw erroCompras;
 
@@ -43,23 +44,29 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
         // 3. RENDERIZA A TABELA E CALCULA O SALDO EM TEMPO REAL
         if (compras && compras.length > 0) {
             compras.forEach(compra => {
-                // Soma ao saldo acumulado visível apenas se estiver Pendente
-                if (compra.status_premio === 'Pendente') {
-                    saldoTotal += parseFloat(compra.valor);
+                saldoTotal += parseFloat(compra.valor);
+
+                // CORREÇÃO DE EXIBIÇÃO DA DATA LOCAL: Evita que o fuso horário altere o dia na tela
+                const dataBanco = compra.data_compra;
+                let dataFormatada = '---';
+                
+                if (dataBanco) {
+                    // Adiciona tratamento para interpretar a data sem distorção de fuso horário
+                    const dataPura = dataBanco.split('T')[0];
+                    if(dataPura.includes('-')) {
+                        const [ano, mes, dia] = dataPura.split('-');
+                        dataFormatada = `${dia}/${mes}/${ano}`;
+                    } else {
+                        dataFormatada = new Date(dataBanco).toLocaleDateString('pt-BR');
+                    }
                 }
 
-                // CORREÇÃO: Captura a data diretamente de 'data_compra'
-                const dataBanco = compra.data_compra;
-                const dataFormatada = dataBanco ? new Date(dataBanco).toLocaleDateString('pt-BR') : '---';
                 const valorFormatado = parseFloat(compra.valor).toFixed(2);
-                
-                // Marcador visual sutil se a compra pertence a um ciclo antigo já resgatado
-                const sulfixoStatus = compra.status_premio === 'Resgatado' ? ' <small style="color:#95a5a6;">(Usado)</small>' : '';
 
                 const linha = `
                     <tr style="border-bottom: 1px solid #ddd;">
                         <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${dataFormatada}</td>
-                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${compra.cupom || '---'}${sulfixoStatus}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${compra.cupom || '---'}</td>
                         <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #27ae60; font-weight: bold;">R$ ${valorFormatado}</td>
                     </tr>
                 `;
@@ -68,7 +75,7 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
         } else {
             tabelaCorpo.innerHTML = `
                 <tr>
-                    <td colspan="3" style="padding: 20px; text-align: center; color: #999;">Nenhuma compra registrada neste código ainda.</td>
+                    <td colspan="3" style="padding: 20px; text-align: center; color: #999;">Nenhum cupom pendente de resgate encontrado.</td>
                 </tr>
             `;
         }
@@ -78,7 +85,6 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
         const containerSaldo = document.getElementById('saldo-exibicao').parentElement;
         const msgPremio = document.getElementById('status-premio-cliente');
 
-        // Caso o cliente já tenha atingido a meta e o vendedor ainda não marcou como entregue
         if (cliente.premiado === true) {
             containerSaldo.style.background = "#d4edda"; 
             document.getElementById('saldo-exibicao').innerHTML = `<span style="color: #155724; font-size: 18px; font-weight: bold;">🏆 META ATINGIDA!</span><br><small style="font-size: 13px; font-weight: normal; color: #155724;">Retire seu prêmio com o vendedor.</small>`;
@@ -87,7 +93,6 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
                 msgPremio.style.color = "#2ecc71";
             }
         } else {
-            // Caso ele esteja no meio de um acúmulo normal de pontos
             containerSaldo.style.background = "#e8f4fd"; 
             document.getElementById('saldo-exibicao').innerText = `R$ ${saldoTotal.toFixed(2)}`;
             
@@ -99,7 +104,6 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
             }
         }
 
-        // Exibe a tela de resultado
         document.getElementById('secao-busca-cliente').classList.add('hidden');
         document.getElementById('painel-resultado').classList.remove('hidden');
 
@@ -109,7 +113,6 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
     }
 });
 
-// Botão Voltar
 document.getElementById('btn-nova-consulta').addEventListener('click', () => {
     document.getElementById('codigo-cliente').value = '';
     document.getElementById('secao-busca-cliente').classList.remove('hidden');
