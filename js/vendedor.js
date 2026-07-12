@@ -28,10 +28,12 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         if (erroCliente || !cliente) { alert('⚠️ Cliente não encontrado!'); return; }
         clienteAtual = cliente;
 
+        // FILTRO AJUSTADO: Busca apenas as compras que ainda não fizeram parte de um resgate
         const { data: compras } = await supabaseClient
             .from('compras')
             .select('valor')
-            .eq('cliente_id', cliente.id);
+            .eq('cliente_id', cliente.id)
+            .eq('status_premio', 'Pendente');
 
         let saldoAcumulado = compras ? compras.reduce((t, c) => t + parseFloat(c.valor), 0) : 0;
 
@@ -42,6 +44,7 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         const statusPremioDiv = document.getElementById('cliente-status-premio');
         const btnResgatar = document.getElementById('btn-resgatar-premio');
         
+        // Sincroniza o painel do vendedor com o status real do banco e saldo pendente
         if (cliente.premiado === true || saldoAcumulado >= metaFidelidade) {
             statusPremioDiv.innerText = "🎉 CLIENTE PREMIADO! Meta atingida.";
             statusPremioDiv.style.color = "#2ecc71";
@@ -67,9 +70,20 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
     const cupomCompra = document.getElementById('cupom-compra').value.trim();
 
     try {
-        await supabaseClient.from('compras').insert([{ cliente_id: clienteAtual.id, valor: valorCompra, cupom: cupomCompra }]);
+        // Insere a nova compra explicitando que ela inicia como 'Pendente'
+        await supabaseClient.from('compras').insert([{ 
+            cliente_id: clienteAtual.id, 
+            valor: valorCompra, 
+            cupom: cupomCompra,
+            status_premio: 'Pendente'
+        }]);
 
-        const { data: compras } = await supabaseClient.from('compras').select('valor').eq('cliente_id', clienteAtual.id);
+        const { data: compras } = await supabaseClient
+            .from('compras')
+            .select('valor')
+            .eq('cliente_id', clienteAtual.id)
+            .eq('status_premio', 'Pendente');
+
         const novoSaldo = compras.reduce((t, c) => t + parseFloat(c.valor), 0);
 
         if (novoSaldo >= metaFidelidade && !clienteAtual.premiado) {
@@ -82,33 +96,32 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
     } catch (err) { alert('Erro ao salvar compra.'); }
 });
 
-// BOTÃO DE RESGATAR PRÊMIO (AJUSTADO COM AWAIT GARANTIDO)
+// BOTÃO DE RESGATAR PRÊMIO (MUDANÇA DE STATUS EM VEZ DE DELETAR)
 if (document.getElementById('btn-resgatar-premio')) {
     document.getElementById('btn-resgatar-premio').addEventListener('click', async () => {
         if (!clienteAtual) return;
         
-        if (!confirm(`Deseja confirmar o resgate do prêmio para ${clienteAtual.nome}?\nIsso irá zerar o saldo e o status de premiado tanto para você quanto para o cliente.`)) return;
+        if (!confirm(`Deseja confirmar o resgate do prêmio para ${clienteAtual.nome}?\nIsso irá atualizar o saldo para recomeçar o ciclo.`)) return;
 
         try {
-            // CORREÇÃO CRÍTICA: Adicionado await para garantir a exclusão completa antes do próximo passo
-            const { error: erroDelete } = await supabaseClient
+            // 1. Em vez de deletar, atualiza as compras atuais para 'Resgatado'
+            const { error: erroUpdateCompras } = await supabaseClient
                 .from('compras')
-                .delete()
-                .eq('cliente_id', clienteAtual.id);
+                .update({ status_premio: 'Resgatado' })
+                .eq('cliente_id', clienteAtual.id)
+                .eq('status_premio', 'Pendente');
 
-            if (erroDelete) throw erroDelete;
+            if (erroUpdateCompras) throw erroUpdateCompras;
 
-            // CORREÇÃO CRÍTICA: Adicionado await para garantir que o cliente mude para false antes de fechar o painel
-            const { error: erroUpdate } = await supabaseClient
+            // 2. Retorna o cliente ao estado inicial não-premiado
+            const { error: erroUpdateCliente } = await supabaseClient
                 .from('clientes')
                 .update({ premiado: false, data_premiacao: null })
                 .eq('id', clienteAtual.id);
 
-            if (erroUpdate) throw erroUpdate;
+            if (erroUpdateCliente) throw erroUpdateCliente;
 
-            alert('🎁 Prêmio entregue com sucesso! O sistema foi completamente resetado para este cliente começar de novo.');
-            
-            // Agora sim, limpa a tela com o banco 100% atualizado
+            alert('🎁 Prêmio entregue com sucesso! O saldo foi reiniciado para novos acúmulos.');
             resetarPainel();
         } catch (err) {
             console.error(err);
