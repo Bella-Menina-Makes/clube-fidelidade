@@ -7,7 +7,13 @@
 }
 
 body {
-    background-color: #f4f6f9;
+    /* BUSCA A IMAGEM DENTRO DA PASTA 'img' QUE CRIAMOS NO GITHUB */
+    background-image: linear-gradient(rgba(244, 246, 249, 0.9), rgba(244, 246, 249, 0.9)), url('img/logo-principal.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    
     color: #333333;
     display: flex;
     justify-content: center;
@@ -124,4 +130,5 @@ button:active {
     border: 2px dashed #63b3ed;
     padding: 15px;
     border-radius: 6px;
-    letter
+    letter-spacing: 1px;
+}
