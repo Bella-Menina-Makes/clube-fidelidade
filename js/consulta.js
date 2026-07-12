@@ -1,6 +1,5 @@
 let metaFidelidadeCliente = 100.00;
 
-// Busca a meta de pontuação assim que a página carrega
 async function buscarMetaConfigurada() {
     try {
         const { data, error } = await supabaseClient
@@ -18,7 +17,6 @@ async function buscarMetaConfigurada() {
 }
 buscarMetaConfigurada();
 
-// Evento de Clique no Botão de Consulta
 document.getElementById('btn-consultar').addEventListener('click', async () => {
     const codigoInput = document.getElementById('codigo-cliente').value.trim().toUpperCase();
 
@@ -28,7 +26,7 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
     }
 
     try {
-        // 1. Localiza o cliente no banco de dados pelo código promocional
+        // 1. Busca o cliente
         const { data: cliente, error: erroCliente } = await supabaseClient
             .from('clientes')
             .select('*')
@@ -36,28 +34,26 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
             .single();
 
         if (erroCliente || !cliente) {
-            alert('⚠️ Código de cliente não encontrado! Verifique se digitou corretamente.');
+            alert('⚠️ Código de cliente não encontrado!');
             return;
         }
 
-        // 2. Busca todas as compras vinculadas a esse cliente, ordenando pelas mais recentes
+        // 2. Busca o histórico de compras completo
         const { data: compras, error: erroCompras } = await supabaseClient
             .from('compras')
             .select('*')
             .eq('cliente_id', cliente.id)
-            .order('created_at', { ascending: false }); // Traz as últimas primeiro
+            .order('created_at', { ascending: false });
 
-        // 3. Calcula o saldo total acumulado
-        let saldoTotal = 0;
+        // 3. Renderiza a tabela de histórico (Garante que sempre apareça)
         const tabelaCorpo = document.getElementById('lista-compras');
-        tabelaCorpo.innerHTML = ''; // Limpa resultados anteriores
+        tabelaCorpo.innerHTML = '';
+        let saldoTotal = 0;
 
         if (compras && compras.length > 0 && !erroCompras) {
             saldoTotal = compras.reduce((total, c) => total + parseFloat(c.valor), 0);
 
-            // Preenche as linhas da tabela de histórico
             compras.forEach(compra => {
-                // Formata a data vinda do banco (ex: "2026-07-11T...") para o formato brasileiro
                 const dataFormatada = new Date(compra.created_at).toLocaleDateString('pt-BR');
                 const valorFormatado = parseFloat(compra.valor).toFixed(2);
 
@@ -71,30 +67,34 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
                 tabelaCorpo.innerHTML += linha;
             });
         } else {
-            // Se não houver compras registradas ainda
             tabelaCorpo.innerHTML = `
                 <tr>
-                    <td colspan="3" style="padding: 20px; text-align: center; color: #999;">Nenhuma compra registrada neste código ainda.</td>
+                    <td colspan="3" style="padding: 20px; text-align: center; color: #999;">Nenhuma compra registrada.</td>
                 </tr>
             `;
         }
 
-        // 4. Exibe na tela as informações do cliente
+        // 4. Lógica Visual Dinâmica do Saldo vs Prêmio
         document.getElementById('nome-exibicao').innerText = `Olá, ${cliente.nome}!`;
-        document.getElementById('saldo-exibicao').innerText = `R$ ${saldoTotal.toFixed(2)}`;
-
-        // Mensagem dinâmica sobre o prêmio
+        const containerSaldo = document.getElementById('saldo-exibicao').parentElement;
         const msgPremio = document.getElementById('status-premio-cliente');
-        if (cliente.premiado || saldoTotal >= metaFidelidadeCliente) {
-            msgPremio.innerText = "🎉 Parabéns! Você atingiu a meta e seu prêmio está disponível!";
+
+        if (cliente.premiado) {
+            // Se o vendedor ainda não deu baixa no prêmio:
+            containerSaldo.style.background = "#d4edda"; // Fundo Verde claro
+            document.getElementById('saldo-exibicao').innerHTML = `<span style="color: #155724; font-size: 18px;">🏆 META ATINGIDA!</span><br><small style="font-size: 13px; font-weight: normal; color: #155724;">Apresente seu código ao vendedor para retirar seu prêmio.</small>`;
+            msgPremio.innerText = "🎉 PARABÉNS! Seu prêmio está disponível para retirada!";
             msgPremio.style.color = "#2ecc71";
         } else {
+            // Se não atingiu ou se o prêmio já foi resgatado (premiado voltou a ser false)
+            containerSaldo.style.background = "#e8f4fd"; // Fundo Azul comum
+            document.getElementById('saldo-exibicao').innerText = `R$ ${saldoTotal.toFixed(2)}`;
+            
             const quantoFalta = metaFidelidadeCliente - saldoTotal;
-            msgPremio.innerText = `Faltam apenas R$ ${quantoFalta.toFixed(2)} em compras para você ganhar o seu prêmio!`;
+            msgPremio.innerText = `Faltam R$ ${quantoFalta.toFixed(2)} em compras para você ganhar o seu prêmio!`;
             msgPremio.style.color = "#e67e22";
         }
 
-        // Alterna os painéis visuais
         document.getElementById('secao-busca-cliente').classList.add('hidden');
         document.getElementById('painel-resultado').classList.remove('hidden');
 
@@ -104,7 +104,6 @@ document.getElementById('btn-consultar').addEventListener('click', async () => {
     }
 });
 
-// Evento para voltar à tela inicial de consulta
 document.getElementById('btn-nova-consulta').addEventListener('click', () => {
     document.getElementById('codigo-cliente').value = '';
     document.getElementById('secao-busca-cliente').classList.remove('hidden');
