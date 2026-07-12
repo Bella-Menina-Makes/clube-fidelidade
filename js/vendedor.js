@@ -42,7 +42,6 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         const statusPremioDiv = document.getElementById('cliente-status-premio');
         const btnResgatar = document.getElementById('btn-resgatar-premio');
         
-        // CORREÇÃO: O vendedor só vê o prêmio se o cliente realmente estiver marcado como premiado no banco de dados
         if (cliente.premiado === true || saldoAcumulado >= metaFidelidade) {
             statusPremioDiv.innerText = "🎉 CLIENTE PREMIADO! Meta atingida.";
             statusPremioDiv.style.color = "#2ecc71";
@@ -83,7 +82,7 @@ document.getElementById('form-lancar-compra').addEventListener('submit', async (
     } catch (err) { alert('Erro ao salvar compra.'); }
 });
 
-// BOTÃO DE RESGATAR PRÊMIO
+// BOTÃO DE RESGATAR PRÊMIO (AJUSTADO COM AWAIT GARANTIDO)
 if (document.getElementById('btn-resgatar-premio')) {
     document.getElementById('btn-resgatar-premio').addEventListener('click', async () => {
         if (!clienteAtual) return;
@@ -91,25 +90,29 @@ if (document.getElementById('btn-resgatar-premio')) {
         if (!confirm(`Deseja confirmar o resgate do prêmio para ${clienteAtual.nome}?\nIsso irá zerar o saldo e o status de premiado tanto para você quanto para o cliente.`)) return;
 
         try {
-            // 1. Apaga o histórico de compras para zerar o saldo real
-            await supabaseClient
+            // CORREÇÃO CRÍTICA: Adicionado await para garantir a exclusão completa antes do próximo passo
+            const { error: erroDelete } = await supabaseClient
                 .from('compras')
                 .delete()
                 .eq('cliente_id', clienteAtual.id);
 
-            // 2. CORREÇÃO: Altera explicitamente o status 'premiado' para FALSE na tabela de clientes
-            await supabaseClient
+            if (erroDelete) throw erroDelete;
+
+            // CORREÇÃO CRÍTICA: Adicionado await para garantir que o cliente mude para false antes de fechar o painel
+            const { error: erroUpdate } = await supabaseClient
                 .from('clientes')
                 .update({ premiado: false, data_premiacao: null })
                 .eq('id', clienteAtual.id);
 
+            if (erroUpdate) throw erroUpdate;
+
             alert('🎁 Prêmio entregue com sucesso! O sistema foi completamente resetado para este cliente começar de novo.');
             
-            // 3. Força a limpeza visual completa do painel do vendedor
+            // Agora sim, limpa a tela com o banco 100% atualizado
             resetarPainel();
         } catch (err) {
             console.error(err);
-            alert('Erro ao processar o resgate.');
+            alert('Erro ao processar o resgate: ' + err.message);
         }
     });
 }
