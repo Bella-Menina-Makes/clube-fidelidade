@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Vendedor - Clube de Fidelidade</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Garante que elementos com a classe .hidden fiquem ocultos por padrão */
+        .hidden {
+            display: none !important;
+        }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -33,8 +39,8 @@
                 
                 <p id="cliente-status-premio" style="font-weight: bold; margin-top: 10px;"></p>
 
-                <button type="button" id="btn-resgatar-premio" class="hidden" style="background-color: #9b59b6; color: white; margin: 10px 0; width: 100%;">
-                 🎁 Confirmar Entrega do Prêmio (Zerar Saldo)
+                <button type="button" id="btn-resgatar-premio" class="hidden" style="background-color: #9b59b6; color: white; margin: 10px 0; width: 100%; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                    🎁 Confirmar Entrega do Prêmio (Zerar Saldo)
                 </button>
             </div>
 
